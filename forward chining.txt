@@ -1,0 +1,51 @@
+# ===========================================
+# Forward Chaining Algorithm in AI
+# ===========================================
+
+def forward_chaining(rules, facts, goal):
+    """
+    Performs forward chaining on a set of rules and facts.
+    """
+    inferred = set()  # facts already used for inference
+    while True:
+        applied_rule = False
+        for rule in rules:
+            conditions, conclusion = rule
+            # If all conditions are true and conclusion not already known
+            if all(cond in facts for cond in conditions) and conclusion not in facts:
+                print(f"Rule fired: IF {conditions} THEN {conclusion}")
+                facts.add(conclusion)
+                applied_rule = True
+                if conclusion == goal:
+                    print(f"\n✅ Goal '{goal}' reached!")
+                    return True
+        if not applied_rule:
+            break
+    print(f"\n❌ Goal '{goal}' cannot be derived from given facts.")
+    return False
+
+
+# ---------- MAIN ----------
+if __name__ == "__main__":
+    print("\n--- Forward Chaining Algorithm ---\n")
+
+    # Knowledge Base: (conditions, conclusion)
+    rules = [
+        (['A', 'B'], 'C'),
+        (['C', 'D'], 'E'),
+        (['E'], 'F'),
+        (['B', 'D'], 'G')
+    ]
+
+    # Initial facts
+    facts = {'A', 'B', 'D'}
+
+    # Goal
+    goal = 'F'
+
+    print("Initial Facts:", facts)
+    print("Goal:", goal)
+    print("\n--- Reasoning Steps ---")
+    success = forward_chaining(rules, facts, goal)
+
+    print("\nFinal Facts:", facts)

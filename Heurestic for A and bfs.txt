@@ -1,0 +1,89 @@
+# ========================================
+# Best-First Search (Greedy) and A* Search
+# ========================================
+
+import heapq
+
+# ----- Graph Representation -----
+graph = {
+    'S': {'A': 1, 'B': 4},
+    'A': {'C': 2, 'D': 5},
+    'B': {'D': 1},
+    'C': {'G': 3},
+    'D': {'G': 2},
+    'G': {}
+}
+
+# ----- Heuristic Values (Estimated cost to reach Goal 'G') -----
+heuristic = {
+    'S': 7,
+    'A': 6,
+    'B': 2,
+    'C': 1,
+    'D': 1,
+    'G': 0
+}
+
+# ----- Best-First Search (Greedy) -----
+def best_first_search(start, goal):
+    visited = set()
+    pq = []
+    heapq.heappush(pq, (heuristic[start], start))  # (heuristic, node)
+    print("Best-First Search Path:", end=" ")
+
+    while pq:
+        h, node = heapq.heappop(pq)
+        print(node, end=" ")
+        if node == goal:
+            print("\nGoal Reached!")
+            return
+        visited.add(node)
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                heapq.heappush(pq, (heuristic[neighbor], neighbor))
+    print("\nGoal not reachable.")
+
+
+# ----- A* Search Algorithm -----
+def a_star_search(start, goal):
+    visited = set()
+    pq = []
+    heapq.heappush(pq, (heuristic[start], 0, start))  # (f = g+h, g, node)
+    parent = {start: None}
+    g_cost = {start: 0}
+
+    while pq:
+        f, g, node = heapq.heappop(pq)
+        if node == goal:
+            print("A* Path:", end=" ")
+            reconstruct_path(parent, goal)
+            print(f"\nTotal cost = {g_cost[goal]}")
+            return
+        visited.add(node)
+        for neighbor, cost in graph[node].items():
+            new_g = g + cost
+            f_val = new_g + heuristic[neighbor]
+            if neighbor not in visited or new_g < g_cost.get(neighbor, float('inf')):
+                parent[neighbor] = node
+                g_cost[neighbor] = new_g
+                heapq.heappush(pq, (f_val, new_g, neighbor))
+
+
+# ----- Helper: Reconstruct Path -----
+def reconstruct_path(parent, goal):
+    path = []
+    node = goal
+    while node is not None:
+        path.append(node)
+        node = parent[node]
+    print(" → ".join(reversed(path)), end=" ")
+
+
+# ----- MAIN -----
+if __name__ == "__main__":
+    print("Graph:", graph)
+    print("Heuristic Values:", heuristic)
+    print("\n--- Best-First Search ---")
+    best_first_search('S', 'G')
+    print("\n--- A* Search ---")
+    a_star_search('S', 'G')

@@ -1,0 +1,48 @@
+# ==========================================
+# Alpha-Beta Pruning Implementation
+# ==========================================
+
+import math
+
+# ----- Alpha-Beta Function -----
+def alphabeta(depth, node_index, maximizing_player, values, alpha, beta, max_depth, prefix=""):
+    # Base case: leaf node
+    if depth == max_depth:
+        print(f"{prefix}Reached leaf node {values[node_index]} at depth {depth}")
+        return values[node_index]
+
+    if maximizing_player:
+        max_eval = -math.inf
+        print(f"{prefix}MAX node at depth {depth}, α={alpha}, β={beta}")
+        for i in range(2):  # two children
+            val = alphabeta(depth + 1, node_index * 2 + i, False, values, alpha, beta, max_depth, prefix + "  ")
+            max_eval = max(max_eval, val)
+            alpha = max(alpha, max_eval)
+            print(f"{prefix}Updated α={alpha}, β={beta}")
+            if beta <= alpha:
+                print(f"{prefix}PRUNED remaining children at depth {depth} (α={alpha} ≥ β={beta})\n")
+                break
+        return max_eval
+
+    else:  # Minimizing player
+        min_eval = math.inf
+        print(f"{prefix}MIN node at depth {depth}, α={alpha}, β={beta}")
+        for i in range(2):  # two children
+            val = alphabeta(depth + 1, node_index * 2 + i, True, values, alpha, beta, max_depth, prefix + "  ")
+            min_eval = min(min_eval, val)
+            beta = min(beta, min_eval)
+            print(f"{prefix}Updated α={alpha}, β={beta}")
+            if beta <= alpha:
+                print(f"{prefix}PRUNED remaining children at depth {depth} (β={beta} ≤ α={alpha})\n")
+                break
+        return min_eval
+
+
+# ----- MAIN -----
+if __name__ == "__main__":
+    # Example game tree
+    values = [3, 5, 6, 9, 1, 2, 0, -1]  # leaf node values
+
+    print("\n=== Alpha-Beta Pruning Visualization ===\n")
+    optimal_value = alphabeta(0, 0, True, values, -math.inf, math.inf, 3)
+    print("\nOptimal Value (Best Outcome for MAX):", optimal_value)

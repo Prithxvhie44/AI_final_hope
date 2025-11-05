@@ -1,0 +1,74 @@
+import random
+import copy
+
+# ----------------------------------------
+# Representation:
+# State = list of stacks, each stack = list of blocks (bottom → top)
+# Example: [['A', 'B'], ['C']] means B on A, C on table
+# ----------------------------------------
+
+# ----- Heuristic Function -----
+def heuristic(state, goal):
+    """Counts number of blocks in the correct position from the bottom."""
+    score = 0
+    for stack_state, stack_goal in zip(state, goal):
+        for i in range(min(len(stack_state), len(stack_goal))):
+            if stack_state[i] == stack_goal[i]:
+                score += 1
+            else:
+                break  # stop when mismatch occurs
+    return score
+
+
+# ----- Generate Neighbors -----
+def get_neighbors(state):
+    """Generate all possible next states by moving top block from one stack to another"""
+    neighbors = []
+    for i in range(len(state)):
+        if not state[i]:  # skip empty stack
+            continue
+        block = state[i][-1]  # top block
+        for j in range(len(state)):
+            if i != j:  # move block to another stack
+                new_state = copy.deepcopy(state)
+                new_state[i].pop()
+                new_state[j].append(block)
+                neighbors.append(new_state)
+    return neighbors
+
+
+# ----- Hill Climbing Algorithm -----
+def hill_climbing(initial, goal, max_steps=50):
+    current = initial
+    current_score = heuristic(current, goal)
+    print("Initial State:", current, "| Heuristic =", current_score)
+
+    for step in range(max_steps):
+        neighbors = get_neighbors(current)
+        neighbor_scores = [(heuristic(n, goal), n) for n in neighbors]
+
+        # pick the best neighbor
+        best_score, best_neighbor = max(neighbor_scores, key=lambda x: x[0], default=(0, None))
+
+        print(f"Step {step+1}: Best Neighbor = {best_neighbor}, Heuristic = {best_score}")
+
+        if best_score <= current_score:
+            print("\nReached local maximum — stopping.")
+            break  # local maximum
+        current, current_score = best_neighbor, best_score
+
+        if current_score == heuristic(goal, goal):
+            print("\nGoal state reached!")
+            break
+
+    print("\nFinal State:", current, "| Heuristic =", current_score)
+    return current
+
+
+# ----- MAIN -----
+if __name__ == "__main__":
+    # Example: A, B, C blocks
+    initial_state = [['A', 'B'], ['C']]       # B on A, C alone
+    goal_state = [['A', 'B', 'C']]            # C on B on A
+
+    final = hill_climbing(initial_state, goal_state)

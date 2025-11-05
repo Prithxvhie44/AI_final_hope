@@ -1,0 +1,62 @@
+# ==============================
+# Depth Limited Search (DLS) and Breadth First Search (BFS)
+# for an Undirected Graph
+# ==============================
+
+from collections import deque
+
+# ----- Graph Representation -----
+# Using adjacency list
+graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E']
+}
+
+# ----- Breadth First Search (BFS) -----
+def bfs(start):
+    visited = set()
+    queue = deque([start])
+    print("BFS Traversal:", end=" ")
+
+    while queue:
+        vertex = queue.popleft()
+        if vertex not in visited:
+            print(vertex, end=" ")
+            visited.add(vertex)
+            for neighbor in graph[vertex]:
+                if neighbor not in visited:
+                    queue.append(neighbor)
+    print("\n")
+
+
+# ----- Depth Limited Search (DLS) -----
+def dls(node, depth, limit, visited):
+    if depth > limit:
+        return
+    print(node, end=" ")
+    visited.add(node)
+    for neighbor in graph[node]:
+        if neighbor not in visited:
+            dls(neighbor, depth + 1, limit, visited)
+
+
+def depth_limited_search(start, limit):
+    visited = set()
+    print(f"DLS Traversal (limit = {limit}):", end=" ")
+    dls(start, 0, limit, visited)
+    print("\n")
+
+
+# ----- Main Code -----
+if __name__ == "__main__":
+    print("Graph vertices and edges:", graph)
+    
+    # Run BFS
+    bfs('A')
+
+    # Run DLS with depth limit 2
+    depth_limited_search('A', 2)
