@@ -6,142 +6,55 @@ from collections import deque
 
 # ---------- Initial and Goal States ----------
 initial_state = {
-    'ON': [('D', 'C')],
-    'ONTABLE': ['A', 'B', 'C'],
-    'CLEAR': ['A', 'B', 'D'],
-    'ARMEMPTY': True
+    'A': 'Table',
+    'B': 'Table',
+    'C': 'Table',
+    'D': 'C'
 }
 
 goal_state = {
-    'ON': [('A', 'B'), ('B', 'D'), ('D', 'C')],
-    'ONTABLE': ['C'],
-    'CLEAR': ['A'],
-    'ARMEMPTY': True
+    'A': 'B',
+    'B': 'D',
+    'D': 'Table',
+    'C': 'Table'
 }
 
-
 # ---------- Helper Functions ----------
-def is_true(goal, state):
-    """Check if a goal condition is true in current state"""
-    pred, args = goal
-    if pred in state:
-        if isinstance(state[pred], list):
-            return args in state[pred]
-        return state[pred] == args
-    return False
+def is_goal_satisfied(goal, state):
+    for block, position in goal.items():
+        if state.get(block) != position:
+            return False
+    return True
 
+def move(block, destination, state):
+    """Move a block from its current position to a new position."""
+    state[block] = destination
+    print(f"Action: MOVE({block}, {destination})")
 
-def add_to_state(state, pred, args):
-    """Add fact to state"""
-    if pred not in state:
-        state[pred] = []
-    if isinstance(state[pred], list):
-        if args not in state[pred]:
-            state[pred].append(args)
-    else:
-        state[pred] = args
-
-
-def remove_from_state(state, pred, args):
-    """Remove fact from state"""
-    if pred in state and isinstance(state[pred], list) and args in state[pred]:
-        state[pred].remove(args)
-
-
-# ---------- Apply Operators ----------
-def apply_operator(op, state):
-    """Apply an action to the state"""
-    act = op[0]
-    if act == 'UNSTACK':
-        x, y = op[1], op[2]
-        remove_from_state(state, 'ON', (x, y))
-        add_to_state(state, 'CLEAR', y)
-        add_to_state(state, 'HOLDING', x)
-        state['ARMEMPTY'] = False
-        remove_from_state(state, 'CLEAR', x)
-    elif act == 'STACK':
-        x, y = op[1], op[2]
-        remove_from_state(state, 'HOLDING', x)
-        add_to_state(state, 'ON', (x, y))
-        state['ARMEMPTY'] = True
-        remove_from_state(state, 'CLEAR', y)
-        add_to_state(state, 'CLEAR', x)
-    elif act == 'PICKUP':
-        x = op[1]
-        remove_from_state(state, 'ONTABLE', x)
-        remove_from_state(state, 'CLEAR', x)
-        add_to_state(state, 'HOLDING', x)
-        state['ARMEMPTY'] = False
-    elif act == 'PUTDOWN':
-        x = op[1]
-        remove_from_state(state, 'HOLDING', x)
-        add_to_state(state, 'ONTABLE', x)
-        add_to_state(state, 'CLEAR', x)
-        state['ARMEMPTY'] = True
-    return state
-
-
-# ---------- Goal Stack Planner ----------
-def goal_stack_planning(initial, goal):
+def goal_stack_planning(initial_state, goal_state):
+    print("\n=== GOAL STACK PLANNING STARTED ===\n")
     stack = deque()
-    plan = []
-    state = initial.copy()
+    current_state = initial_state.copy()
 
-    # Push all goal conditions initially
-    for pred, args_list in goal.items():
-        if isinstance(args_list, list):
-            for args in args_list:
-                stack.append((pred, args))
-        else:
-            stack.append((pred, args_list))
+    # Push final goal
+    stack.append(goal_state)
 
     while stack:
         top = stack.pop()
 
-        # If it's a compound goal
-        if isinstance(top, tuple) and top[0] in ['ON', 'ONTABLE', 'CLEAR', 'ARMEMPTY']:
-            if not is_true(top, state):
-                pred, args = top
-                if pred == 'ON':
-                    x, y = args
-                    # Subgoals for ON(x, y)
-                    stack.append(('STACK', x, y))
-                    stack.append(('HOLDING', x))
-                    stack.append(('CLEAR', y))
-                elif pred == 'CLEAR':
-                    (x,) = args if isinstance(args, tuple) else (args,)
-                    # Make x clear
-                    for onpair in state.get('ON', []):
-                        if onpair[1] == x:
-                            stack.append(('UNSTACK', onpair[0], x))
-                            stack.append(('ON', onpair[0], x))
-                            break
-                elif pred == 'HOLDING':
-                    (x,) = args if isinstance(args, tuple) else (args,)
-                    if ('ON', (x, 'table')) in state.get('ONTABLE', []):
-                        stack.append(('PICKUP', x))
-                    else:
-                        for onpair in state.get('ON', []):
-                            if onpair[0] == x:
-                                stack.append(('UNSTACK', x, onpair[1]))
-                                break
-                elif pred == 'ARMEMPTY':
-                    if 'HOLDING' in state and state['HOLDING']:
-                        x = state['HOLDING'][0]
-                        stack.append(('PUTDOWN', x))
-        elif isinstance(top, tuple) and top[0] in ['STACK', 'UNSTACK', 'PICKUP', 'PUTDOWN']:
-            # Apply operator
-            print("Action:", top)
-            plan.append(top)
-            state = apply_operator(top, state)
+        # If top is a goal (dict)
+        if isinstance(top, dict):
+            if not is_goal_satisfied(top, current_state):
+                for block, destination in top.items():
+                    if current_state[block] != destination:
+                        stack.append(('MOVE', block, destination))
+        # If top is an operator
+        elif isinstance(top, tuple):
+            action, block, destination = top
+            move(block, destination, current_state)
 
-    return plan
+    print("\nFinal State:", current_state)
+    print("\n=== GOAL STACK PLANNING COMPLETED ===")
 
-
-# ---------- MAIN ----------
-if __name__ == "__main__":
-    print("\n--- Goal Stack Planning for Blocks World ---\n")
-    plan = goal_stack_planning(initial_state, goal_state)
-    print("\nGenerated Plan (Sequence of Actions):\n")
-    for step, action in enumerate(plan, start=1):
-        print(f"Step {step}: {action}")
+# ---------- Run Planner ----------
+goal_stack_planning(initial_state, goal_state)
